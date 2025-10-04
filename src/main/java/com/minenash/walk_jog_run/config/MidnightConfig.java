@@ -10,7 +10,8 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
+
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
@@ -43,6 +44,7 @@ import java.util.regex.Pattern;
  *  Single class config library - feel free to copy!
  *  Based on https://github.com/Minenash/TinyConfig
  *  Credits to Minenash */
+
 
 @SuppressWarnings("unchecked")
 public abstract class MidnightConfig {
@@ -260,7 +262,7 @@ public abstract class MidnightConfig {
             }).dimensions(this.width / 2 + 4, this.height - 28, 150, 20).build());
 
             this.list = new MidnightConfigListWidget(this.client, this.width, this.height, 32, this.height - 32, 25);
-            if (this.client != null && this.client.world != null) this.list.setRenderBackground(false);
+            if (this.client != null && this.client.world != null) this.list.setDragging(false);
             this.addSelectableChild(this.list);
             for (EntryInfo info : entries) {
                 if (info.id.equals(modid)) {
@@ -269,10 +271,10 @@ public abstract class MidnightConfig {
                         info.value = info.defaultValue;
                         info.tempValue = info.defaultValue.toString();
                         info.index = 0;
-                        double scrollAmount = list.getScrollAmount();
+                        double scrollAmount = list.getScrollY();
                         this.reload = true;
                         Objects.requireNonNull(client).setScreen(this);
-                        list.setScrollAmount(scrollAmount);
+                        list.setScrollY(scrollAmount);
                     })).dimensions(width - 205, 0, 40, 20).build();
 
                     if (info.widget instanceof Map.Entry) {
@@ -290,12 +292,12 @@ public abstract class MidnightConfig {
                         resetButton.setMessage(Text.literal("R").formatted(Formatting.RED));
                         ButtonWidget cycleButton = ButtonWidget.builder(Text.literal(String.valueOf(info.index)).formatted(Formatting.GOLD), (button -> {
                             ((List<String>)info.value).remove("");
-                            double scrollAmount = list.getScrollAmount();
+                            double scrollAmount = list.getScrollY();
                             this.reload = true;
                             info.index = info.index + 1;
                             if (info.index > ((List<String>)info.value).size()) info.index = 0;
                             Objects.requireNonNull(client).setScreen(this);
-                            list.setScrollAmount(scrollAmount);
+                            list.setScrollY(scrollAmount);
                         })).dimensions(width - 185, 0, 20, 20).build();
                         widget.setTooltip(getTooltip(info));
                         this.list.addButton(List.of(widget, resetButton, cycleButton), name, info);
@@ -330,11 +332,11 @@ public abstract class MidnightConfig {
 
         }
         @Override
-        public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-            this.renderBackground(matrices);
-            this.list.render(matrices, mouseX, mouseY, delta);
-            drawCenteredTextWithShadow(matrices, textRenderer, title, width / 2, 15, 0xFFFFFF);
-            super.render(matrices,mouseX,mouseY,delta);
+        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+//            this.renderBackground(context);
+            this.list.render(context, mouseX, mouseY, delta);
+            context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 15, 0xFFFFFF);
+            super.render(context,mouseX,mouseY,delta);
         }
     }
     @Environment(EnvType.CLIENT)
@@ -346,8 +348,8 @@ public abstract class MidnightConfig {
             this.centerListVertically = false;
             textRenderer = minecraftClient.textRenderer;
         }
-        @Override
-        public int getScrollbarPositionX() { return this.width -7; }
+//        @Override
+//        public int getScrollbarPositionX() { return this.width -7; }
 
         public void addButton(List<ClickableWidget> buttons, Text text, EntryInfo info) {
             this.addEntry(new ButtonEntry(buttons, text, info));
@@ -370,11 +372,17 @@ public abstract class MidnightConfig {
             this.info = info;
             children.addAll(buttons);
         }
-        public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            buttons.forEach(b -> { b.setY(y); b.render(matrices, mouseX, mouseY, tickDelta); });
+        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+            buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta); });
             if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) {
-                if (info.centered) textRenderer.drawWithShadow(matrices, text, MinecraftClient.getInstance().getWindow().getScaledWidth() / 2f - (textRenderer.getWidth(text) / 2f), y + 5, 0xFFFFFF);
-                else DrawableHelper.drawTextWithShadow(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
+                if (info.centered) context.drawTextWithShadow(
+                        textRenderer,
+                        text,
+                        (int)(MinecraftClient.getInstance().getWindow().getScaledWidth() / 2f - textRenderer.getWidth(text) / 2f),
+                        y + 5,
+                        0xFFFFFF
+                );
+                else context.drawTextWithShadow(textRenderer, text, 12, y + 5, 0xFFFFFF);
             }
         }
         public List<? extends Element> children() {return children;}

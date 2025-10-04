@@ -11,7 +11,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+//import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.InputUtil;
@@ -89,8 +90,8 @@ public class WalkJogRunClient implements ClientModInitializer {
 
         });
 
-        HudRenderCallback.EVENT.register( WalkJogRun.id("icon_render"), (matrix, tickDelta) -> {
-            matrix.push();
+        HudRenderCallback.EVENT.register( WalkJogRun.id("icon_render"), (DrawContext context, tickDelta) -> {
+            context.push();
 
             int y = getIconY();
             int x = getIconX();
